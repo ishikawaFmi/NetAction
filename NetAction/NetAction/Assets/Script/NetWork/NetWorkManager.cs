@@ -13,13 +13,14 @@ using Cysharp.Threading.Tasks;
 
 public class NetWorkManager : MonoBehaviour
 {
-    static public NetWorkManager Incetance;
+    static public NetWorkManager Incetance { get; private set; }
 
     private void Awake()
     {
-        if (Incetance is null)
+        if (Incetance == null)
         {
             Incetance = this;
+            _roomsSubject.Subscribe(r => RoomListView.Instance.RoomListSetup(r));
         }
         else
         {
@@ -32,6 +33,9 @@ public class NetWorkManager : MonoBehaviour
     [SerializeField]
     int port = 50000;
 
+  
+    public int PlayerId;
+
     Thread thread;
     UdpClient client;
 
@@ -42,11 +46,15 @@ public class NetWorkManager : MonoBehaviour
         RogIn,
         RogOut,
         MetHod,
+        NetWorkMetHod,
     }
     private void Start()
     {
         client = new UdpClient();
         client.Connect(host, port);
+
+        var s = Scheduler.MainThread;//アクセスしておかないとMainThreadDispatcherが使えない
+
         if (!client.Client.Connected)
         {
             Debug.LogError("err");
@@ -57,35 +65,74 @@ public class NetWorkManager : MonoBehaviour
         }
         
         thread = new Thread(new ThreadStart(ThreadMetHod));
+
         thread.Start();
-        var rogin = new Messege("Rogin", SendMesageState.RogIn);
+
+        if (client.Client.Connected)
+        {
+            GameManager.Instance.GamePreparation.OnNext(Unit.Default);
+        }
        
-        byte[] buffer = Encoding.UTF8.GetBytes(JsonUtility.ToJson(rogin));
-        client.Send(buffer,buffer.Length);
-   
-        _roomsSubject.Subscribe(r => RoomListView.Instance.RoomListSetup(r));
-
-        var s = Scheduler.MainThread;//アクセスしておかないとMainThreadDispatcherが使えない
-
     }
     void ThreadMetHod()
     {
         while (true)
         {
             IPEndPoint iP = null;
-            byte[] date = client.Receive(ref iP);       
+            byte[] date = client.Receive(ref iP);
+
+            if (date == null) return;
+
             Receive(iP, date);
         }
     }
     void Receive(IPEndPoint iP, byte[] date)
     {
         var x = Encoding.UTF8.GetString(date);
+            
         Dictionary<string,object> json = (Dictionary<string, object>)MiniJSON.Json.Deserialize(x);
+
+        if ((string)json["State"] == "PlayerId")
+        {
+            int id = int.Parse(json["PlayerID"].ToString());
+
+            PlayerId = id;
+        }
         if ((string)json["State"] == "RoomList")
         {
             var rooms = JsonUtility.FromJson<Rooms>(MiniJSON.Json.Serialize(json));
 
             MainThreadDispatcher.Post(_ => _roomsSubject.OnNext(rooms.RoomList),null);
+        }
+        if ((string)json["State"] == "GameStart")
+        {
+            MainThreadDispatcher.Post(_ => GameManager.Instance.GameStart.OnNext(Unit.Default), null);
+        }
+    }
+
+    public void SendJsonMessege(Messege messege)
+    {
+        byte[] buffer = Encoding.UTF8.GetBytes(JsonUtility.ToJson(messege));
+
+        client.Send(buffer, buffer.Length);
+    }
+    
+    public struct Messege
+    {
+        public string Name;
+
+        public SendMesageState State;
+
+        public int PlayerId;
+
+        public string Method;
+
+        public Messege(string name, SendMesageState mesageState ,int playerId = 0 , string method = null)
+        {
+            Name = name;
+            State = mesageState;
+            PlayerId = playerId;
+            Method = method;
         }
     }
 
@@ -94,18 +141,11 @@ public class NetWorkManager : MonoBehaviour
     /// </summary>
     void OnApplicationQuit()
     {
+        var rogout = new Messege("RogOut", SendMesageState.RogOut,PlayerId);
+
+        byte[] buffer = Encoding.UTF8.GetBytes(JsonUtility.ToJson(rogout));
+        client.Send(buffer, buffer.Length);
         client.Close();
         thread.Abort();
-    }
-    public struct Messege
-    {
-        public string Name;
-
-        public SendMesageState State;
-        public Messege(string name, SendMesageState mesageState)
-        {
-            Name = name;
-            State = mesageState;
-        }
     }
 }
