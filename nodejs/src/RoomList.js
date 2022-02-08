@@ -44,9 +44,10 @@ RoomList.prototype.SendRoomList = function (port, address, server) {
     const data = {};
     data['State'] = 'RoomList';
     data['RoomList'] = currentRoomList;
-
-    const js = JSON.stringify(data);
-    this.utils.SendJson(js, port, address, server);
+    if (currentRoomList.length >= 1) {
+        const js = JSON.stringify(data);
+        this.utils.SendJson(js, port, address, server);
+    }
 }
 
 RoomList.prototype.NewRoomID = function () {

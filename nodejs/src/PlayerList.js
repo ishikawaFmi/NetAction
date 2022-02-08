@@ -43,4 +43,4 @@ PlayerList.prototype.NewPlayerID = function () {
     return id;
 }
 
-module.eplayerports = PlayerList;
+module.exports = PlayerList;

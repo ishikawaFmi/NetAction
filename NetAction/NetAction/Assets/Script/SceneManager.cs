@@ -22,6 +22,6 @@ public class SceneManager : MonoBehaviour
 
        scene.allowSceneActivation = false;
 
-        GameManager.Instance.IsGameStart = scene;
+       GameManager.Instance.GameSceneAsync = scene;
     }
 }

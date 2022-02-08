@@ -10,6 +10,7 @@ using System.Text;
 using System.Linq;
 using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
+using System;
 
 public class NetWorkManager : MonoBehaviour
 {
@@ -33,15 +34,15 @@ public class NetWorkManager : MonoBehaviour
     [SerializeField]
     int port = 50000;
 
-  
+
     public int PlayerId;
 
     Thread thread;
-    UdpClient client;
+    public UdpClient Client;
 
-    Subject<Rooms.Room[]> _roomsSubject= new Subject<Rooms.Room[]>();
+    Subject<Rooms.Room[]> _roomsSubject = new Subject<Rooms.Room[]>();
 
-    public  enum SendMesageState
+    public enum SendMesageState
     {
         RogIn,
         RogOut,
@@ -50,12 +51,12 @@ public class NetWorkManager : MonoBehaviour
     }
     private void Start()
     {
-        client = new UdpClient();
-        client.Connect(host, port);
+        Client = new UdpClient();
+        Client.Connect(host, port);
 
         var s = Scheduler.MainThread;//アクセスしておかないとMainThreadDispatcherが使えない
 
-        if (!client.Client.Connected)
+        if (!Client.Client.Connected)
         {
             Debug.LogError("err");
         }
@@ -63,60 +64,78 @@ public class NetWorkManager : MonoBehaviour
         {
             Debug.Log("sec");
         }
-        
+
         thread = new Thread(new ThreadStart(ThreadMetHod));
 
         thread.Start();
 
-        if (client.Client.Connected)
+        if (Client.Client.Connected)
         {
             GameManager.Instance.GamePreparation.OnNext(Unit.Default);
         }
-       
+
     }
+    /// <summary>
+    /// クライアントからデータを受信する
+    /// </summary>
     void ThreadMetHod()
     {
         while (true)
         {
             IPEndPoint iP = null;
-            byte[] date = client.Receive(ref iP);
+            byte[] data = Client.Receive(ref iP);
 
-            if (date == null) return;
+            if (data == null) return;
 
-            Receive(iP, date);
+            Receive(data);
         }
     }
-    void Receive(IPEndPoint iP, byte[] date)
+    /// <summary>
+    /// 受信したデータをの処理をする
+    /// </summary>
+    /// <param name="data"></param>
+    void Receive(byte[] data)
     {
-        var x = Encoding.UTF8.GetString(date);
-            
-        Dictionary<string,object> json = (Dictionary<string, object>)MiniJSON.Json.Deserialize(x);
+        var x = Encoding.UTF8.GetString(data);
 
-        if ((string)json["State"] == "PlayerId")
-        {
-            int id = int.Parse(json["PlayerID"].ToString());
+        Dictionary<string, object> json = (Dictionary<string, object>)MiniJSON.Json.Deserialize(x);//送られてきたデータをDictionaryに変換する
 
-            PlayerId = id;
-        }
-        if ((string)json["State"] == "RoomList")
+        switch ((string)json["State"])
         {
-            var rooms = JsonUtility.FromJson<Rooms>(MiniJSON.Json.Serialize(json));
+            case "PlayerId":
+                int id = int.Parse(json["PlayerID"].ToString());
 
-            MainThreadDispatcher.Post(_ => _roomsSubject.OnNext(rooms.RoomList),null);
+                PlayerId = id;
+                break;
+            case "RoomList":
+                var rooms = JsonUtility.FromJson<Rooms>(MiniJSON.Json.Serialize(json));
+
+                MainThreadDispatcher.Post(_ => _roomsSubject.OnNext(rooms.RoomList), null);
+                break;
+            case "SetColor":
+                GameManager.Instance.MyColor = (GameManager.TrunpColor)Enum.Parse(typeof(GameManager.TrunpColor), json["SetColor"].ToString());
+
+                break;  
+            case "GameSceneLoad":
+                MainThreadDispatcher.Post(_ => GameManager.Instance.GameSceneStart.OnNext(Unit.Default), null);
+                break;
+            case "GameStart":
+                GameManager.Instance.GameStart.OnNext(Unit.Default);
+                break;
+            default:
+                Debug.LogError("送られてきたデータがおかしいです");
+                break;
         }
-        if ((string)json["State"] == "GameStart")
-        {
-            MainThreadDispatcher.Post(_ => GameManager.Instance.GameStart.OnNext(Unit.Default), null);
-        }
+
     }
 
     public void SendJsonMessege(Messege messege)
     {
         byte[] buffer = Encoding.UTF8.GetBytes(JsonUtility.ToJson(messege));
 
-        client.Send(buffer, buffer.Length);
+        Client.Send(buffer, buffer.Length);
     }
-    
+
     public struct Messege
     {
         public string Name;
@@ -127,7 +146,7 @@ public class NetWorkManager : MonoBehaviour
 
         public string Method;
 
-        public Messege(string name, SendMesageState mesageState ,int playerId = 0 , string method = null)
+        public Messege(string name, SendMesageState mesageState, int playerId = 0, string method = null)
         {
             Name = name;
             State = mesageState;
@@ -141,11 +160,12 @@ public class NetWorkManager : MonoBehaviour
     /// </summary>
     void OnApplicationQuit()
     {
-        var rogout = new Messege("RogOut", SendMesageState.RogOut,PlayerId);
+        var rogout = new Messege("RogOut", SendMesageState.RogOut, PlayerId);
 
         byte[] buffer = Encoding.UTF8.GetBytes(JsonUtility.ToJson(rogout));
-        client.Send(buffer, buffer.Length);
-        client.Close();
+
+        Client.Send(buffer, buffer.Length);
+        Client.Close();
         thread.Abort();
     }
 }
