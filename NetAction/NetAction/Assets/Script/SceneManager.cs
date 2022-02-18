@@ -5,15 +5,20 @@ using UnityEngine.SceneManagement;
 using UniRx;
 public class SceneManager : MonoBehaviour
 {
-    public static SceneManager Instance { get; private set; }
+    public static SceneManager Incetance { get; private set; }
 
     void Awake()
     {
-        if (Instance == null) 
+        if (Incetance == null) 
         {
-            Instance = this;
+            Incetance = this;
             DontDestroyOnLoad(this.gameObject);
+        }
+        else
+        {
+            Destroy(this.gameObject);
         }       
+       
     }
  
     public void GameSceneLoadAsync()
@@ -22,6 +27,15 @@ public class SceneManager : MonoBehaviour
 
        scene.allowSceneActivation = false;
 
-       GameManager.Instance.GameSceneAsync = scene;
+       NetWorkManager.Incetance.GameSceneAsync = scene;
+    }
+
+    public void TitleScene()
+    {
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Title");
+    }
+    public void ResultScene()
+    {
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Result");
     }
 }

@@ -32,7 +32,7 @@ public class Room : MonoBehaviour
 
     public Text RoomText;
 
-    public void EnterRoom()
+    public async void EnterRoom()
     {
         var enterRoom = new Dictionary<string, object>()
         {
@@ -43,7 +43,7 @@ public class Room : MonoBehaviour
         var jsonEnterRoom = MiniJSON.Json.Serialize(enterRoom);
         var messege = new NetWorkManager.Messege("EnterRoom", NetWorkManager.SendMesageState.NetWorkMetHod, NetWorkManager.Incetance.PlayerId, jsonEnterRoom);
 
-        NetWorkManager.Incetance.SendJsonMessege(messege);
+        await NetWorkManager.Incetance.SendJsonMessege(messege);
 
 
         RoomListView.Instance.InRoom(RoomName);

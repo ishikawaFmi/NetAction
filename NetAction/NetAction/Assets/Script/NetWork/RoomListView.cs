@@ -23,6 +23,8 @@ public class RoomListView : MonoBehaviour
     Text _roomNameText;
 
     List<GameObject> _roomList = new List<GameObject>();
+
+   public bool IsInRoom = false;
     private void Awake()
     {
         if (Instance == null)
@@ -54,7 +56,7 @@ public class RoomListView : MonoBehaviour
     /// <summary>
     /// 新しくルームを作成する
     /// </summary>
-    public void CreateRoom()
+    public async void CreateRoom()
     {
         var createRoom = new Dictionary<string, string>()
         {
@@ -62,9 +64,9 @@ public class RoomListView : MonoBehaviour
         };
 
         var jsonCreateRoom = MiniJSON.Json.Serialize(createRoom);
-        var messege = new NetWorkManager.Messege("CreateRoom",NetWorkManager.SendMesageState.NetWorkMetHod,NetWorkManager.Incetance.PlayerId, jsonCreateRoom);
+        var messege = new NetWorkManager.Messege("CreateRoom",NetWorkManager.SendMesageState.NetWorkMetHod, NetWorkManager.Incetance.PlayerId, jsonCreateRoom);
 
-        NetWorkManager.Incetance.SendJsonMessege(messege);
+        await NetWorkManager.Incetance.SendJsonMessege(messege);
 
         InRoom(_roomNameField.text);
     }
@@ -73,6 +75,16 @@ public class RoomListView : MonoBehaviour
         _roomListPanel.gameObject.SetActive(false);
         _roomNameText.gameObject.SetActive(true);
 
+        IsInRoom = true;
         _roomNameText.text = $"現在のルーム名　:　{roomName} \n マッチング中 ";
+
+
+    }
+    public void LeftRoom()
+    {
+        _roomListPanel.gameObject.SetActive(true);
+        _roomNameText.gameObject.SetActive(false);
+
+        IsInRoom = false;
     }
 }

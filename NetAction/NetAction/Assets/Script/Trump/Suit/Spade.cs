@@ -6,17 +6,13 @@ public class Spade : Trump
 {
     public Spade(int index)
     {
+        SetCard(index);
+    }
+ 
+    public override void SetCard(int index)
+    {
         CardIndex = index;
-      
-    }
-    void Start()
-    {
-        SetCard();
-    }
-    public override void SetCard()
-    {
         MySuit = Suit.Spade;
-        GetComponent<Image>().sprite = CardSprites[CardIndex - 1];
     }
 
 }

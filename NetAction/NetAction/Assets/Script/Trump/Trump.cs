@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
-abstract public class Trump : MonoBehaviour
+abstract public class Trump
 {
     public int CardIndex;
 
-    public Sprite[] CardSprites;
-
-    [NonSerialized] public Suit MySuit = Suit.None;
+    public Suit MySuit = Suit.None;
 
     public enum Suit
     {
@@ -19,14 +17,5 @@ abstract public class Trump : MonoBehaviour
         Club,
         None,
     }
-
-    void OnValidate()
-    {
-        if (CardIndex <= 13 && CardIndex >= 1)
-        {
-            GetComponent<Image>().sprite = CardSprites[CardIndex - 1];
-        }
-     
-    }
-    abstract public void SetCard();
+    abstract public void SetCard(int index);
 }

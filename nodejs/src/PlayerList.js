@@ -24,22 +24,16 @@ PlayerList.prototype.GetPlayer = function (value) {
     return returnPlayer;
 }
 
-PlayerList.prototype.CreatePlayer = function (port, address,server) {
-    var player = new Player(this.NewPlayerID(), port, address);
+PlayerList.prototype.CreatePlayer = function (playerId, port, address, server) {
+    var player = new Player(playerId, port, address);
+    this.PlayerIdList.push(playerId);
     this.SetPlayerList(player);
-
-    var data = {};
-    data['State'] = 'PlayerId';
-    data['PlayerID'] = player.PlayerId;
-
-    var json = JSON.stringify(data);
-    this.utils.SendJson(json, port, address, server);
 }
 
 PlayerList.prototype.NewPlayerID = function () {
     var id = this.PlayerIdList.length + 1;
-    this.PlayerIdList.push(id);
-    
+
+
     return id;
 }
 

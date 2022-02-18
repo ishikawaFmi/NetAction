@@ -6,18 +6,12 @@ using UnityEngine.UI;
 public class Club : Trump
 {
     public Club(int index)
+    { 
+        SetCard(index);
+    }
+    public override void SetCard(int index)
     {
         CardIndex = index;
-       
-    }
-    void Start()
-    {
-        SetCard();
-    }
-    public override void SetCard()
-    {
         MySuit = Suit.Club;
-        GetComponent<Image>().sprite = CardSprites[CardIndex - 1];
     }
-
 }

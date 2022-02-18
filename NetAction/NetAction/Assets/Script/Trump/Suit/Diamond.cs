@@ -7,16 +7,13 @@ public class Diamond : Trump
 {
     public Diamond(int index)
     {
+        SetCard(index);
+        
+    }
+
+    public override void SetCard(int index)
+    {
         CardIndex = index;
-      
-    }
-    void Start()
-    {
-        SetCard();
-    }
-    public override void SetCard()
-    {
         MySuit = Suit.Diamond;
-        GetComponent<Image>().sprite = CardSprites[CardIndex - 1];
     }
 }

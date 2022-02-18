@@ -21,26 +21,34 @@ public class NetWorkManager : MonoBehaviour
         if (Incetance == null)
         {
             Incetance = this;
-            _roomsSubject.Subscribe(r => RoomListView.Instance.RoomListSetup(r));
+            Conect();
+            DontDestroyOnLoad(this.gameObject);
         }
         else
         {
-            DontDestroyOnLoad(Incetance);
+            Destroy(this.gameObject);
         }
     }
     [SerializeField]
-    string host = "localHost";
+    string _host = "localHost";
 
     [SerializeField]
-    int port = 50000;
+    int _port = 50000;
 
+    public Guid PlayerId;
 
-    public int PlayerId;
-
-    Thread thread;
     public UdpClient Client;
 
-    Subject<Rooms.Room[]> _roomsSubject = new Subject<Rooms.Room[]>();
+    Thread _thread;
+
+    CancellationTokenSource _cancellationToken;
+
+    //ゲームシーンに移行時に呼ぶ
+    public Subject<Unit> GameSceneStart = new Subject<Unit>();
+
+    //ゲームシーンをプリロードして置くための変数
+    public AsyncOperation GameSceneAsync;
+
 
     public enum SendMesageState
     {
@@ -49,10 +57,22 @@ public class NetWorkManager : MonoBehaviour
         MetHod,
         NetWorkMetHod,
     }
-    private void Start()
+    void Start()
     {
+        GameSceneStart.Subscribe(_ => GameSceneAsync.allowSceneActivation = true);
+        GameSceneStart.Subscribe(async _ => await Incetance.SendJsonMessege(new Messege("GameScene", SendMesageState.NetWorkMetHod, PlayerId)));
+    }
+
+    async void Conect()
+    {
+        Incetance.PlayerId = Guid.NewGuid();
+
         Client = new UdpClient();
-        Client.Connect(host, port);
+
+        while (!Client.Client.Connected)
+        {
+            Client.Connect(_host, _port);
+        }
 
         var s = Scheduler.MainThread;//アクセスしておかないとMainThreadDispatcherが使えない
 
@@ -65,36 +85,52 @@ public class NetWorkManager : MonoBehaviour
             Debug.Log("sec");
         }
 
-        thread = new Thread(new ThreadStart(ThreadMetHod));
+        _cancellationToken = new CancellationTokenSource();
 
-        thread.Start();
+        // _thread = new Thread(new ThreadStart(ThreadMetHod));
+        ThreadMetHod(_cancellationToken.Token);
 
-        if (Client.Client.Connected)
-        {
-            GameManager.Instance.GamePreparation.OnNext(Unit.Default);
-        }
+        await UniTask.WaitUntil(() => Client.Client.Connected);
 
+        await SendJsonMessege(new Messege("Rogin", NetWorkManager.SendMesageState.RogIn, NetWorkManager.Incetance.PlayerId));
+        SceneManager.Incetance.GameSceneLoadAsync();
     }
+
     /// <summary>
     /// クライアントからデータを受信する
     /// </summary>
-    void ThreadMetHod()
+    async void ThreadMetHod(CancellationToken cancellationToken)
     {
+        await UniTask.SwitchToThreadPool();
+
+        cancellationToken.Register(() => Client.Close());
         while (true)
         {
-            IPEndPoint iP = null;
-            byte[] data = Client.Receive(ref iP);
+            IPEndPoint iP = new IPEndPoint(IPAddress.Any, 0);
+            try
+            {
+                if (Client.Client != null)
+                {
+                    if (Client.Client.Connected)
+                    {
+                        byte[] data = Client.Receive(ref iP);
+                        Receive(data);
+                    }
+                }
 
-            if (data == null) return;
 
-            Receive(data);
+            }
+            catch (SocketException e)
+            {
+                Debug.Log(e);
+            }
         }
     }
     /// <summary>
     /// 受信したデータをの処理をする
     /// </summary>
     /// <param name="data"></param>
-    void Receive(byte[] data)
+    async void Receive(byte[] data)
     {
         var x = Encoding.UTF8.GetString(data);
 
@@ -102,25 +138,56 @@ public class NetWorkManager : MonoBehaviour
 
         switch ((string)json["State"])
         {
-            case "PlayerId":
-                int id = int.Parse(json["PlayerID"].ToString());
-
-                PlayerId = id;
-                break;
             case "RoomList":
                 var rooms = JsonUtility.FromJson<Rooms>(MiniJSON.Json.Serialize(json));
 
-                MainThreadDispatcher.Post(_ => _roomsSubject.OnNext(rooms.RoomList), null);
+                MainThreadDispatcher.Post(_ => RoomListView.Instance.RoomListSetup(rooms.RoomList), null);
+                break;
+            case "RoomDelete":
+                if (RoomListView.Instance.IsInRoom && UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Game")
+                {
+                    UnityEngine.SceneManagement.SceneManager.LoadScene("Title");
+                }
+                else if (RoomListView.Instance.IsInRoom)
+                {
+                    RoomListView.Instance.LeftRoom();
+                }
                 break;
             case "SetColor":
-                GameManager.Instance.MyColor = (GameManager.TrunpColor)Enum.Parse(typeof(GameManager.TrunpColor), json["SetColor"].ToString());
-
-                break;  
+                GameManager.MyColor = (GameManager.TrunpColor)Enum.Parse(typeof(GameManager.TrunpColor), json["SetColor"].ToString());
+                break;
             case "GameSceneLoad":
-                MainThreadDispatcher.Post(_ => GameManager.Instance.GameSceneStart.OnNext(Unit.Default), null);
+                MainThreadDispatcher.Post(_ => GameSceneStart.OnNext(Unit.Default), null);
                 break;
             case "GameStart":
-                GameManager.Instance.GameStart.OnNext(Unit.Default);
+                MainThreadDispatcher.Post(_ => GameManager.Instance.GameStart.OnNext(Unit.Default), null);
+                break;
+            case "IncetanceCard":
+                var index = int.Parse(json["Index"].ToString());
+                var suit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["Suit"].ToString());
+                MainThreadDispatcher.Post(_ => GameManager.Instance.FieldIncetanceCard(suit, index), null);
+
+                break;
+            case "ChengeCard":
+                var beforeIndex = int.Parse(json["BeforeIndex"].ToString());
+                var beforeSuit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["BeforeSuit"].ToString());
+                var afterIndex = int.Parse(json["AftereIndex"].ToString());
+                var afterSuit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["AfterSuit"].ToString());
+
+                MainThreadDispatcher.Post(_ => GameManager.Instance.ChengeCard(beforeSuit, beforeIndex, afterSuit, afterIndex), null);
+
+                break;
+            case "NotCard":
+                MainThreadDispatcher.Post(_ => GameManager.Instance.FieldRefresh(), null);
+                break;      
+            case "CheakWin":
+                if (GameManager.Instance.EnemyTrumpCount == 0)
+                {
+                  await SendJsonMessege(new Messege("SendWin", NetWorkManager.SendMesageState.MetHod, NetWorkManager.Incetance.PlayerId));
+                }
+                break;
+            case "SendWin":
+                 MainThreadDispatcher.Post(_ => SceneManager.Incetance.ResultScene(), null);
                 break;
             default:
                 Debug.LogError("送られてきたデータがおかしいです");
@@ -129,11 +196,13 @@ public class NetWorkManager : MonoBehaviour
 
     }
 
-    public void SendJsonMessege(Messege messege)
+    public async Task SendJsonMessege(Messege messege)
     {
         byte[] buffer = Encoding.UTF8.GetBytes(JsonUtility.ToJson(messege));
-
-        Client.Send(buffer, buffer.Length);
+        if (Client != null)
+        {
+            await Client.SendAsync(buffer, buffer.Length);
+        }
     }
 
     public struct Messege
@@ -142,15 +211,19 @@ public class NetWorkManager : MonoBehaviour
 
         public SendMesageState State;
 
-        public int PlayerId;
+        public string PlayerId;
 
         public string Method;
 
-        public Messege(string name, SendMesageState mesageState, int playerId = 0, string method = null)
+        public Messege(string name, SendMesageState mesageState, Guid playerId, string method = null)
         {
             Name = name;
             State = mesageState;
-            PlayerId = playerId;
+            var jsonPlayerId = new Dictionary<string, Guid>()
+            {
+               {"PlayerID" ,playerId},
+            };
+            PlayerId = MiniJSON.Json.Serialize(jsonPlayerId);
             Method = method;
         }
     }
@@ -158,14 +231,12 @@ public class NetWorkManager : MonoBehaviour
     /// <summary>
     /// アプリケーション終了時
     /// </summary>
-    void OnApplicationQuit()
+    async void OnApplicationQuit()
     {
+        Debug.Log("aaaa");
         var rogout = new Messege("RogOut", SendMesageState.RogOut, PlayerId);
+        await SendJsonMessege(rogout);
 
-        byte[] buffer = Encoding.UTF8.GetBytes(JsonUtility.ToJson(rogout));
-
-        Client.Send(buffer, buffer.Length);
-        Client.Close();
-        thread.Abort();
+        _cancellationToken.Cancel();
     }
 }

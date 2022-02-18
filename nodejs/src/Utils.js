@@ -5,8 +5,4 @@ Utils.prototype.SendJson = function (js, port, address, server) {
 
     server.send(js, port, address);
 }
-
-Utils.prototype.GameStart = function () {
-
-}
 module.exports = Utils;
