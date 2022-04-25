@@ -36,8 +36,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 243, y: -1.5077}
-  m_SizeDelta: {x: 327.5039, y: 101.8331}
+  m_AnchoredPosition: {x: 126.8, y: 0}
+  m_SizeDelta: {x: 151.2, y: 62.2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4467673033219357540
 CanvasRenderer:
@@ -199,8 +199,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 102
+    m_Font: {fileID: 12800000, guid: b518997c53631ac4cba964fce2d121fb, type: 3}
+    m_FontSize: 43
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -246,7 +246,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -347, y: 0}
+  m_AnchoredPosition: {x: -119.64, y: 0}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8788782837616221854
@@ -278,11 +278,11 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 55
+    m_Font: {fileID: 12800000, guid: b518997c53631ac4cba964fce2d121fb, type: 3}
+    m_FontSize: 45
     m_FontStyle: 0
     m_BestFit: 0
-    m_MinSize: 10
+    m_MinSize: 0
     m_MaxSize: 57
     m_Alignment: 4
     m_AlignByGeometry: 0
@@ -328,8 +328,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 952.49, y: 159.07}
+  m_AnchoredPosition: {x: 178.02747, y: 0}
+  m_SizeDelta: {x: 465.6, y: 87.72}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8788782838221864565
 CanvasRenderer:
@@ -381,7 +381,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ebc06db3add2b854782d4502230c3379, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  RoomId: 0
+  RoomNamber: 
   RoomName: 
-  MaxRoomMenber: 0
   RoomText: {fileID: 8788782837616221853}

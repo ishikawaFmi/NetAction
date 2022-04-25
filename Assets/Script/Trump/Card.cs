@@ -62,7 +62,7 @@ public class Card : MonoBehaviour
                 {"AfterIndex",GameManager.Incetance.CurrentCard.Index},
             };
                var cardJson = MiniJSON.Json.Serialize(changeCard);
-               NetWorkManager.Incetance.SendJsonMessege(new NetWorkManager.Messege("ChengeCard", NetWorkManager.SendMesageState.MetHod, NetWorkManager.Incetance.PlayerId, cardJson));
+               WebSocketManager.Incetance.WebSocketSendMessege(new WebSocketManager.Messege("ChengeCard", WebSocketManager.Messege.MessegeState.Game, cardJson));
             }
         }
       

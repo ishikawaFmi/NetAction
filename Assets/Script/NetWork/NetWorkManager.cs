@@ -134,56 +134,56 @@ public class NetWorkManager : MonoBehaviour
 
         switch ((string)json["State"])
         {
-            case "RoomList":
-                var rooms = JsonUtility.FromJson<Rooms>(MiniJSON.Json.Serialize(json));
+            //case "RoomList":
+            //    var rooms = JsonUtility.FromJson<Rooms>(MiniJSON.Json.Serialize(json));
 
-                MainThreadDispatcher.Post(_ => RoomListView.Incetance.RoomListSetup(rooms.RoomList), null);
-                break;
+            //    MainThreadDispatcher.Post(_ => RoomListView.Incetance.RoomListSetup(rooms.RoomList), null);
+            //    break;
             case "RoomDelete":
                 MainThreadDispatcher.Post(_ => RoomListView.Incetance.DeleteRoom(), null);
                 break;
-            case "SetColor":
-                GameManager.MyColor = (GameManager.TrunpColor)Enum.Parse(typeof(GameManager.TrunpColor), json["SetColor"].ToString());
-                break;
-            case "GameSceneLoad":
-                MainThreadDispatcher.Post(_ => GameSceneStart.OnNext(Unit.Default), null);
-                break;
-            case "GameStart":
-                MainThreadDispatcher.Post(_ => GameManager.Incetance.GameStart.OnNext(Unit.Default), null);
-                break;
-            case "IncetanceCard":
-                var index = int.Parse(json["Index"].ToString());
-                var suit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["Suit"].ToString());
-                MainThreadDispatcher.Post(_ => GameManager.Incetance.FieldIncetanceCard(suit, index), null);
+            //case "SetColor":
+            //    GameManager.MyColor = (GameManager.TrunpColor)Enum.Parse(typeof(GameManager.TrunpColor), json["SetColor"].ToString());
+                //break;
+            //case "GameSceneLoad":
+            //    MainThreadDispatcher.Post(_ => GameSceneStart.OnNext(Unit.Default), null);
+            //    break;
+            //case "GameStart":
+            //    MainThreadDispatcher.Post(_ => GameManager.Incetance.GameStart.OnNext(Unit.Default), null);
+            //    break;
+            //case "IncetanceCard":
+            //    var index = int.Parse(json["Index"].ToString());
+            //    var suit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["Suit"].ToString());
+            //    MainThreadDispatcher.Post(_ => GameManager.Incetance.FieldIncetanceCard(suit, index), null);
 
-                break;
-            case "ChengeCard":
-                var beforeIndex = int.Parse(json["BeforeIndex"].ToString());
-                var beforeSuit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["BeforeSuit"].ToString());
-                var afterIndex = int.Parse(json["AftereIndex"].ToString());
-                var afterSuit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["AfterSuit"].ToString());
+            //    break;
+            //case "ChengeCard":
+            //    var beforeIndex = int.Parse(json["BeforeIndex"].ToString());
+            //    var beforeSuit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["BeforeSuit"].ToString());
+            //    var afterIndex = int.Parse(json["AftereIndex"].ToString());
+            //    var afterSuit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["AfterSuit"].ToString());
 
-                MainThreadDispatcher.Post(_ => GameManager.Incetance.ChengeCard(beforeSuit, beforeIndex, afterSuit, afterIndex), null);
+            //    MainThreadDispatcher.Post(_ => GameManager.Incetance.ChengeCard(beforeSuit, beforeIndex, afterSuit, afterIndex), null);
 
-                break;
-            case "NotCard":
-                MainThreadDispatcher.Post(_ => GameManager.Incetance.FieldRefresh(), null);
-                break;      
-            case "CheakWin":
-                if (GameManager.Incetance.EnemyTrumpCount == 0)
-                {
-                   SendJsonMessege(new Messege("SendWin", NetWorkManager.SendMesageState.MetHod, NetWorkManager.Incetance.PlayerId));
-                   GameManager.Incetance.WinCheak = true;
-                }
-                break;
-            case "SendWin":
+            //    break;
+            //case "NotCard":
+            //    MainThreadDispatcher.Post(_ => GameManager.Incetance.FieldRefresh(), null);
+            //    break;      
+            //case "CheakWin":
+            //    if (GameManager.Incetance.EnemyTrumpCount == 0)
+            //    {
+            //       SendJsonMessege(new Messege("SendWin", NetWorkManager.SendMesageState.MetHod, NetWorkManager.Incetance.PlayerId));
+            //       GameManager.Incetance.WinCheak = true;
+            //    }
+            //    break;
+            //case "SendWin":
                 
-                MainThreadDispatcher.Post(_ => SceneManager.Incetance.ResultScene(), null);
-                ResultSceneManager.ResultString = (string)json["WinOrLose"];
-                break;
-            default:
-                Debug.LogError("�����Ă����f�[�^�����������ł�");
-                break;
+            //    MainThreadDispatcher.Post(_ => SceneManager.Incetance.ResultScene(), null);
+            //    ResultSceneManager.ResultString = (string)json["WinOrLose"];
+            //    break;
+            //default:
+            //    Debug.LogError("�����Ă����f�[�^�����������ł�");
+            //    break;
         }
 
     }
@@ -221,7 +221,7 @@ public class NetWorkManager : MonoBehaviour
     }
 
     /// <summary>
-    /// �A�v���P�[�V�����I����
+    /// 
     /// </summary>
     void OnApplicationQuit()
     {
