@@ -22,6 +22,9 @@ public class RoomListView : MonoBehaviour
     [SerializeField]
     Text _roomNameText;
 
+    [SerializeField]
+    Button _exitButton;
+
     List<GameObject> _roomList = new List<GameObject>();
 
    public bool IsInRoom = false;
@@ -79,14 +82,17 @@ public class RoomListView : MonoBehaviour
         IsInRoom = true;
         _roomNameText.text = $"現状の入室中のルーム{roomName} \n";
 
-
+        _exitButton.gameObject.SetActive(true);
     }
     public void LeftRoom()
     {
         _roomListPanel.gameObject.SetActive(true);
         _roomNameText.gameObject.SetActive(false);
+        _roomNameField.text = "";
 
         IsInRoom = false;
+
+        _exitButton.gameObject.SetActive(false);
     }
 
     public void DeleteRoom()
@@ -106,5 +112,11 @@ public class RoomListView : MonoBehaviour
         {
             LeftRoom();
         }
+    }
+
+    public void ExitRoom()
+    {
+        WebSocketManager.Incetance.WebSocketSendMessege(new WebSocketManager.Messege(("ExitRoom"), WebSocketManager.Messege.MessegeState.Room));
+        LeftRoom();
     }
 }

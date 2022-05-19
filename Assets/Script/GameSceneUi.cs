@@ -17,6 +17,14 @@ public class GameSceneUi : MonoBehaviour
 
     [SerializeField] Sprite _redCard;
 
+    private void Awake()
+    {
+        if (Incetance == null)
+        {
+            Incetance = this;
+        }
+    }
+
     void Start()
     {
         if (GameManager.MyColor == GameManager.TrunpColor.Black)

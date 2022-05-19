@@ -2,12 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 using UniRx;
 using UnityEngine;
 using UnityEngine.UI;
 using WebSocketSharp;
-using WebSocketSharp.Server;
 
 
 public class WebSocketManager : MonoBehaviour
@@ -21,7 +19,9 @@ public class WebSocketManager : MonoBehaviour
     int _port = 5001;
 
     [SerializeField]
-     string _id;
+    string _id;
+
+    WebSocket _ws;
 
     [DllImport("__Internal")]
     private static extern void Connect(string server);
@@ -32,7 +32,10 @@ public class WebSocketManager : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void WSSendMessage(string messege);
 
+
+
     public Subject<Unit> GameSceneLoad = new Subject<Unit>();
+
     private void Awake()
     {
         if (Incetance == null)
@@ -51,10 +54,23 @@ public class WebSocketManager : MonoBehaviour
         GameSceneLoad.Subscribe(_ => SceneManager.Incetance.GameSceneLoad());
         GameSceneLoad.Subscribe(_ => WebSocketSendMessege(new Messege("GameScene", Messege.MessegeState.Room)));
 
-        Connect($"ws://{_ipAddres}:{_port}");//サーバーに接続する
-        StartCoroutine(ReciveMessege());//サーバーからの受信を開始する
+        var s = Scheduler.MainThread;//宣言しておかないとMainThread
+
+        if (Application.platform == RuntimePlatform.WebGLPlayer)
+        {
+            Connect($"ws://{_ipAddres}:{_port}");//サーバーに接続する
+            StartCoroutine(ReciveMessege());//サーバーからの受信を開始する
+        }
+        else if(Application.platform == RuntimePlatform.WindowsEditor)
+        {
+            _ws = new WebSocket($"ws://{_ipAddres}:{_port}");//サーバーに接続する
+            _ws.Connect();
+            _ws.OnMessage += (sender, e) => Sort(e.Data);//サーバーからの受信を開始する
+
+        }
     }
 
+#if UNITY_WEBGL
     /// <summary>
     /// サーバーから受信し続ける
     /// </summary>
@@ -73,7 +89,7 @@ public class WebSocketManager : MonoBehaviour
             yield return null;
         }
     }
-
+#endif
 
     /// <summary>
     /// サーバーから送られてきたJsonをStateごとに処理する
@@ -145,13 +161,20 @@ public class WebSocketManager : MonoBehaviour
     /// <param name="messge">送るメッセージの情報</param>
     public void WebSocketSendMessege(Messege messge)
     {
-       WSSendMessage(JsonUtility.ToJson(messge));
-    } 
+        if (Application.platform == RuntimePlatform.WebGLPlayer)
+        {
+            WSSendMessage(JsonUtility.ToJson(messge));
+        }
+       else if (Application.platform == RuntimePlatform.WindowsEditor)
+        {
+            _ws.Send(JsonUtility.ToJson(messge));
+        }
+    }
 
     /// <summary>
     /// サーバーに送る情報
     /// </summary>
-  public struct Messege
+    public struct Messege
     {
         public string MethodName;
 
@@ -166,12 +189,29 @@ public class WebSocketManager : MonoBehaviour
             Game,
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="methodName">サーバーの呼ぶ関数名</param>
+        /// <param name="messegeState">サーバーのメッセージ種類</param>
+        /// <param name="methodData">関数のデータ</param>
         public Messege(string methodName, MessegeState messegeState, string methodData = null)
         {
             this.State = messegeState;
             this.MethodName = methodName;
             this.MethodData = methodData;
         }
+    }
 
+    public void Rogout()
+    {
+        WebSocketSendMessege(new Messege("Rogout", Messege.MessegeState.NetWork));
+        StopCoroutine(ReciveMessege());
+    }
+
+    private void OnApplicationQuit()
+    {
+        Rogout();
+        _ws.Close();
     }
 }
