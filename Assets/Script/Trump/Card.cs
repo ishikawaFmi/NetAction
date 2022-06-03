@@ -14,6 +14,13 @@ public class Card : MonoBehaviour
 
     public bool IsDeck;
 
+    /// <summary>
+    /// カードに情報をセットする
+    /// </summary>
+    /// <param name="sprite"></param>
+    /// <param name="suit"></param>
+    /// <param name="index"></param>
+    /// <param name="isDeck"></param>
     public void SetCard(Sprite sprite, Trump.Suit suit, int index, bool isDeck = true)
     {
         CardImage.sprite = sprite;
@@ -38,21 +45,27 @@ public class Card : MonoBehaviour
         trigger.triggers.Add(entry);
     }
 
+    /// <summary>
+    /// 現在選択中のカードにセットする
+    /// </summary>
     public void ChoiceCard()
     {
         if (GameManager.Incetance.MyDeakCardList.Contains(this))
         {
             GameManager.Incetance.CurrentCard = this;
-            GameManager.Incetance.HighlightCard(this);
+            GameSceneUi.Incetance.HighlightCard(this);
         }
     }
 
+    /// <summary>
+    /// サーバーのカードを交換する関数を呼ぶ
+    /// </summary>
     public  void ChengeCardRequest()
     {
         if (GameManager.Incetance.CurrentCard != null) 
         {
 
-            if (Index + 1 == GameManager.Incetance.CurrentCard.Index || Index - 1 == GameManager.Incetance.CurrentCard.Index || Index == 13 && GameManager.Incetance.CurrentCard.Index == 1 || Index == 1 && GameManager.Incetance.CurrentCard.Index == 13)
+            if (GameManager.Incetance.ChangeCheak(Index, GameManager.Incetance.CurrentCard.Index))
             {
                 var changeCard = new Dictionary<string, object>()
             {

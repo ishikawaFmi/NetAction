@@ -71,12 +71,15 @@ public class GameManager : MonoBehaviour
         GameStart.Subscribe(_ => NewCardDraw.OnNext(Unit.Default));
         GameStart.Subscribe(_ => NewCardDraw.OnNext(Unit.Default));
         GameStart.Subscribe(_ => NetWorkIncetanceCard(Draw()));
-        GameStart.Subscribe(_ => HighlightCard());
+        GameStart.Subscribe(_ => GameSceneUi.Incetance.HighlightCard());
 
         await UniTask.WaitUntil(() => FieldCardList.Count == 2);
         Cheak.OnNext(Unit.Default);
     }
 
+    /// <summary>
+    /// デッキを生成しシャッフルする
+    /// </summary>
     void DeckSetUp()
     {
         List<Trump> trumps = new List<Trump>();
@@ -96,6 +99,9 @@ public class GameManager : MonoBehaviour
         _trumpList = trumps.OrderBy(x => Guid.NewGuid()).ToList();
     }
 
+    /// <summary>
+    /// カードをドローする
+    /// </summary>
     Trump Draw()
     {
         var trump = _trumpList[0];
@@ -103,10 +109,28 @@ public class GameManager : MonoBehaviour
         return trump;
     }
 
+    /// <summary>
+    /// 変更の条件を満たしているか確認する
+    /// </summary>
+    /// <param name="befor"></param>
+    /// <param name="after"></param>
+    /// <returns></returns>
+    public bool ChangeCheak(int befor, int after)
+    {
+        if (befor + 1 == after || befor - 1 == after || befor == 13 && after == 1 || befor == 1 && after == 13)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     public Sprite ReturnCardSprite(Trump.Suit suit, int index) => _spriteList.ToList().Find(x => x.name == $"{suit}{index}");
 
     /// <summary>
-    /// �f�b�L�ɃJ�[�h�𐶐�����
+    /// カードを生成する
     /// </summary>
     /// <param name="trump"></param>
     void IncetanceCard(Trump trump)
@@ -123,7 +147,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// �t�B�[���h�ɃJ�[�h�𐶐�����
+    /// フィールドにカードを生成する
     /// </summary>
     /// <param name="suit"></param>
     /// <param name="index"></param>
@@ -159,7 +183,7 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// �T�[�o�[�ɃJ�[�h�𐶐�����Json�𑗂�
+    /// サーバーのカードを生成する関数に情報を渡す
     /// </summary>
     /// <param name="trump"></param>
     void NetWorkIncetanceCard(Trump trump)
@@ -180,7 +204,7 @@ public class GameManager : MonoBehaviour
 
 
     /// <summary>
-    /// �o�����J�[�h�����Ă���J�[�h��ύX���h���[����
+    /// フィールドのカードを手札のカードと交換する
     /// </summary>
     /// <param name="beforeSuit"></param>
     /// <param name="beforeIndex"></param>
@@ -195,7 +219,7 @@ public class GameManager : MonoBehaviour
                 Destroy(CurrentCard.gameObject);
                 MyDeakCardList.Remove(CurrentCard);
                 CurrentCard = null;
-                HighlightCard();
+                GameSceneUi.Incetance.HighlightCard();
                 if (_trumpList.Count > 0)
                 {
                     NewCardDraw.OnNext(Unit.Default);
@@ -210,7 +234,7 @@ public class GameManager : MonoBehaviour
         {
             if (card.CurrentSuit == beforeSuit && card.Index == beforeIndex)
             {
-                if (card.Index + 1 == afterIndex || card.Index - 1 == afterIndex || card.Index == 13 && afterIndex == 1 || card.Index == 1 && afterIndex == 13)
+                if (ChangeCheak(card.Index, afterIndex))
                 {
                     var sprite = ReturnCardSprite(afterSuit, afterIndex);
                     card.SetCard(sprite, afterSuit, afterIndex, false);
@@ -238,6 +262,10 @@ public class GameManager : MonoBehaviour
         Cheak.OnNext(Unit.Default);
     }
 
+    /// <summary>
+    /// お互いにカードを出せない場合はフィールドのカードを破棄し
+    /// 互いに一枚デッキから出す
+    /// </summary>
     public async void FieldRefresh()
     {
         if (MyDeakCardList.Count == 0)
@@ -284,33 +312,16 @@ public class GameManager : MonoBehaviour
                 NetWorkIncetanceCard(card);
             }
         }
-        Debug.Log("FieldRefresh");
+
         await UniTask.WaitUntil(() => FieldCardList.Count == 2);
         Cheak.OnNext(Unit.Default);
     }
 
-    public void HighlightCard(Card highlightCard = null)
-    {
-        foreach (var card in MyDeakCardList)
-        {
-            if (highlightCard == null)
-            {
-                card.CardImage.color = new Color(1, 1, 1, 0.5f);
-            }
-            else
-            {
-                if (card.CurrentSuit == highlightCard.CurrentSuit && card.Index == highlightCard.Index)
-                {
-                    card.CardImage.color = new Color(1, 1, 1, 1);
-                }
-                else
-                {
-                    card.gameObject.GetComponent<Image>().color = new Color(1, 1, 1, 0.5f);
-                }
-            }
 
-        }
-    }
+
+    /// <summary>
+    /// カードを出せるかチェックする
+    /// </summary>
     public void CardChaeck()
     {
         bool isChaeck = false;
@@ -319,7 +330,7 @@ public class GameManager : MonoBehaviour
         {
             for (int x = 0; x < MyDeakCardList.Count; x++)
             {
-                if (FieldCardList[i].Index + 1 == MyDeakCardList[x].Index || FieldCardList[i].Index - 1 == MyDeakCardList[x].Index || FieldCardList[i].Index == 13 && MyDeakCardList[x].Index == 1 || FieldCardList[i].Index == 1 && MyDeakCardList[x].Index == 13)
+                if (ChangeCheak(FieldCardList[i].Index, MyDeakCardList[x].Index))
                 {
                     isChaeck = true;
                 }
@@ -332,11 +343,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 勝敗の確認
+    /// </summary>
     public void WinChack()
     {
         if (MyDeakCardList.Count == 0 && !WinCheak)
         {
-            Debug.Log("winChack");
             WebSocketManager.Incetance.WebSocketSendMessege(new WebSocketManager.Messege("WinChack", WebSocketManager.Messege.MessegeState.Game));
             WinCheak = true;
         }

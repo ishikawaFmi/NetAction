@@ -35,6 +35,12 @@ public class RoomListView : MonoBehaviour
             Incetance = this;
         }
     }
+
+    /// <summary>
+    /// サーバーから送られてきたルームの情報を
+    /// UIに反映する
+    /// </summary>
+    /// <param name="rooms"></param>
     public  void RoomListSetup(Rooms.Room[] rooms)
     {
         if (rooms == null) return;
@@ -55,8 +61,9 @@ public class RoomListView : MonoBehaviour
             _roomList.Add(roomIns.gameObject);
         }
     }
+
     /// <summary>
-    /// 
+    /// サーバーのルームを作成する関数を呼ぶ
     /// </summary>
     public  void CreateRoom()
     {
@@ -74,6 +81,11 @@ public class RoomListView : MonoBehaviour
 
         InRoom(_roomNameField.text);
     }
+
+    /// <summary>
+    /// 入室し必要の無いUIを消す
+    /// </summary>
+    /// <param name="roomName"></param>
     public void InRoom(string roomName)
     {      
         _roomListPanel.gameObject.SetActive(false);
@@ -84,6 +96,10 @@ public class RoomListView : MonoBehaviour
 
         _exitButton.gameObject.SetActive(true);
     }
+
+    /// <summary>
+    /// 退室しUIを戻す
+    /// </summary>
     public void LeftRoom()
     {
         _roomListPanel.gameObject.SetActive(true);
@@ -95,6 +111,9 @@ public class RoomListView : MonoBehaviour
         _exitButton.gameObject.SetActive(false);
     }
 
+    /// <summary>
+    /// ルームがなくなったら呼ばれる
+    /// </summary>
     public void DeleteRoom()
     {
         if (GameManager.Incetance.WinCheak) return;
@@ -114,6 +133,9 @@ public class RoomListView : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// サーバーにルームから退室することを知らせる
+    /// </summary>
     public void ExitRoom()
     {
         WebSocketManager.Incetance.WebSocketSendMessege(new WebSocketManager.Messege(("ExitRoom"), WebSocketManager.Messege.MessegeState.Room));
