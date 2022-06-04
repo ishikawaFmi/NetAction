@@ -32,8 +32,6 @@ public class WebSocketManager : MonoBehaviour
     [DllImport("__Internal")]
     private static extern void WSSendMessage(string messege);
 
-
-
     public Subject<Unit> GameSceneLoad = new Subject<Unit>();
 
     private void Awake()
@@ -54,14 +52,12 @@ public class WebSocketManager : MonoBehaviour
         GameSceneLoad.Subscribe(_ => SceneManager.Incetance.GameSceneLoad());
         GameSceneLoad.Subscribe(_ => WebSocketSendMessege(new Messege("GameScene", Messege.MessegeState.Room)));
 
-        var s = Scheduler.MainThread;//宣言しておかないとMainThread
-
         if (Application.platform == RuntimePlatform.WebGLPlayer)
         {
             Connect($"ws://{_ipAddres}:{_port}");//サーバーに接続する
             StartCoroutine(ReciveMessege());//サーバーからの受信を開始する
         }
-        else if(Application.platform == RuntimePlatform.WindowsEditor)
+        else if (Application.platform == RuntimePlatform.WindowsEditor)
         {
             _ws = new WebSocket($"ws://{_ipAddres}:{_port}");//サーバーに接続する
             _ws.Connect();
@@ -107,22 +103,22 @@ public class WebSocketManager : MonoBehaviour
             case "RoomList"://サーバーから送られてきたルームのデータを表示する
                 var rooms = JsonUtility.FromJson<Rooms>(MiniJSON.Json.Serialize(json));
 
-                MainThreadDispatcher.Post(_ => RoomListView.Incetance.RoomListSetup(rooms.RoomList), null);
+                RoomListView.Incetance.RoomListSetup(rooms.RoomList);
                 break;
             case "RoomDelete":
-                MainThreadDispatcher.Post(_ => RoomListView.Incetance.DeleteRoom(), null);
+                RoomListView.Incetance.DeleteRoom();
                 break;
             case "GameSceneLoad"://ゲームシーンへ遷移する
-                MainThreadDispatcher.Post(_ => GameSceneLoad.OnNext(Unit.Default), null);
+                GameSceneLoad.OnNext(Unit.Default);
                 break;
             case "GameStart"://ゲームをスタートさせる
-                MainThreadDispatcher.Post(_ => GameManager.Incetance.GameStart.OnNext(Unit.Default), null);
+                GameManager.Incetance.GameStart.OnNext(Unit.Default);
                 break;
             case "IncetanceCard"://フィールドにカードを生成する
                 var index = int.Parse(json["Index"].ToString());
                 var suit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["Suit"].ToString());
 
-                MainThreadDispatcher.Post(_ => GameManager.Incetance.FieldIncetanceCard(suit, index), null);
+                GameManager.Incetance.FieldIncetanceCard(suit, index);
                 break;
             case "ChengeCard"://フィールドのカードと手札を交換する
                 var beforeIndex = int.Parse(json["BeforeIndex"].ToString());
@@ -130,10 +126,10 @@ public class WebSocketManager : MonoBehaviour
                 var afterIndex = int.Parse(json["AftereIndex"].ToString());
                 var afterSuit = (Trump.Suit)Enum.Parse(typeof(Trump.Suit), json["AfterSuit"].ToString());
 
-                MainThreadDispatcher.Post(_ => GameManager.Incetance.ChengeCard(beforeSuit, beforeIndex, afterSuit, afterIndex), null);
+                GameManager.Incetance.ChengeCard(beforeSuit, beforeIndex, afterSuit, afterIndex);
                 break;
             case "NotCard"://自分と相手の出せるカードがなかったためフィールドカードをリセットしてお互い1枚ドローする
-                MainThreadDispatcher.Post(_ => GameManager.Incetance.FieldRefresh(), null);
+                GameManager.Incetance.FieldRefresh();
                 break;
             case "CheakWin":
                 if (GameManager.Incetance.EnemyTrumpCount == 0)//相手の残りカードが0だったら相手の勝利
@@ -147,7 +143,7 @@ public class WebSocketManager : MonoBehaviour
                 }
                 break;
             case "SendWin"://リザルトシーンへ遷移して勝敗を表示する
-                MainThreadDispatcher.Post(_ => SceneManager.Incetance.ResultScene(), null);
+                SceneManager.Incetance.ResultScene();
                 ResultSceneManager.ResultString = (string)json["WinOrLose"];
                 break;
             default:
@@ -165,7 +161,7 @@ public class WebSocketManager : MonoBehaviour
         {
             WSSendMessage(JsonUtility.ToJson(messge));
         }
-       else if (Application.platform == RuntimePlatform.WindowsEditor)
+        else if (Application.platform == RuntimePlatform.WindowsEditor)
         {
             _ws.Send(JsonUtility.ToJson(messge));
         }
@@ -189,9 +185,6 @@ public class WebSocketManager : MonoBehaviour
             Game,
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
         /// <param name="methodName">サーバーの呼ぶ関数名</param>
         /// <param name="messegeState">サーバーのメッセージ種類</param>
         /// <param name="methodData">関数のデータ</param>
@@ -203,6 +196,9 @@ public class WebSocketManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ゲーム終了時に呼ぶ 
+    /// </summary>
     public void Rogout()
     {
         WebSocketSendMessege(new Messege("Rogout", Messege.MessegeState.NetWork));
